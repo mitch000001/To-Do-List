@@ -6,6 +6,7 @@ import org.mitchwork.todolist.R;
 
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -27,6 +28,10 @@ public class ToDoList extends Activity {
   private ListView myListView;
   private EditText myEditText;
   private ToDoItemAdapter aa;
+  
+  private static final String TEXT_ENTRY_KEY = "TEXT_ENTRY_KEY";
+  private static final String ADDING_ITEM_KEY = "ADDING_ITEM_KEY";
+  private static final String SELECTED_INDEX_KEY = "SELECTED_INDEX_KEY";
 
   /** Called when the activity is first created. */
   public void onCreate(Bundle savedInstanceState) {
@@ -61,6 +66,57 @@ public class ToDoList extends Activity {
     });
     
     registerForContextMenu(myListView);
+    restoreUIState();
+  }
+  
+  private void restoreUIState() {
+	 // Get the activity preferences object.
+	  SharedPreferences settings = getPreferences(Activity.MODE_PRIVATE);
+	  
+	  // Read the UI state values, specifying default values.
+	  String text = settings.getString(TEXT_ENTRY_KEY, "");
+	  Boolean adding = settings.getBoolean(ADDING_ITEM_KEY, false);
+	  
+	  // Restore the UI to the prvious state.
+	  if (adding) {
+		  addNewItem();
+		  myEditText.setText(text);
+	  }
+	
+  }
+  
+  @Override
+  public void onSaveInstanceState(Bundle savedInstanceState) {
+	  savedInstanceState.putInt(SELECTED_INDEX_KEY, myListView.getSelectedItemPosition());
+	  
+	  super.onSaveInstanceState(savedInstanceState);
+  }
+  
+  @Override
+  public void onRestoreInstanceState(Bundle savedInstanceState) {
+	  int pos = -1;
+	  
+	  if (savedInstanceState != null)
+		  if (savedInstanceState.containsKey(SELECTED_INDEX_KEY))
+			  pos = savedInstanceState.getInt(SELECTED_INDEX_KEY, -1);
+	  
+	  myListView.setSelection(pos);
+  }
+
+  @Override
+  protected void onPause() {
+	  super.onPause();
+	  
+	  // Get the activity preferences object.
+	  SharedPreferences uiState = getPreferences(0);
+	  // Get the preferences editor
+	  SharedPreferences.Editor editor = uiState.edit();
+	  
+	  // Add the UI state preference values.
+	  editor.putString(TEXT_ENTRY_KEY, myEditText.getText().toString());
+	  editor.putBoolean(ADDING_ITEM_KEY, addingNew);
+	  // Commit the preferences.
+	  editor.commit();
   }
   
   @Override
