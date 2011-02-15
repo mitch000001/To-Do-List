@@ -35,11 +35,10 @@ public final class R {
         public static final int todolist_item=0x7f030001;
     }
     public static final class string {
-        public static final int add_new=0x7f060002;
-        public static final int app_name=0x7f060001;
-        public static final int cancel=0x7f060004;
-        public static final int hello=0x7f060000;
-        public static final int remove=0x7f060003;
+        public static final int add_new=0x7f060001;
+        public static final int app_name=0x7f060000;
+        public static final int cancel=0x7f060003;
+        public static final int remove=0x7f060002;
     }
     public static final class style {
         public static final int ToDoTheme=0x7f070000;

@@ -1,11 +1,14 @@
 package org.mitchwork.todolist;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.mitchwork.todolist.R;
 
 
 import android.app.Activity;
+import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -27,6 +30,13 @@ public class ToDoList extends Activity {
   private ListView myListView;
   private EditText myEditText;
   private ToDoItemAdapter aa;
+  
+  private static final String TEXT_ENTRY_KEY = "TEXT_ENTRY_KEY";
+  private static final String ADDING_ITEM_KEY = "ADDING_ITEM_KEY";
+  private static final String SELECTED_INDEX_KEY = "SELECTED_INDEX_KEY";
+  
+  ToDoDBAdapter toDoDBAdapter;
+  Cursor toDoListCursor;
 
   /** Called when the activity is first created. */
   public void onCreate(Bundle savedInstanceState) {
@@ -50,7 +60,8 @@ public class ToDoList extends Activity {
         if (event.getAction() == KeyEvent.ACTION_DOWN)
           if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
             ToDoItem newItem = new ToDoItem(myEditText.getText().toString());
-            todoItems.add(0, newItem);
+            toDoDBAdapter.insertTask(newItem);
+            updateArray();
             myEditText.setText("");
             aa.notifyDataSetChanged();
             cancelAdd();
@@ -61,6 +72,98 @@ public class ToDoList extends Activity {
     });
     
     registerForContextMenu(myListView);
+    restoreUIState();
+    
+    toDoDBAdapter = new ToDoDBAdapter(this);
+    
+    // Open or create the database
+    toDoDBAdapter.open();
+    
+    populateTodoList();
+  }
+  
+  private void populateTodoList() {
+	// Get all the todo list items from the database.
+	  toDoListCursor = toDoDBAdapter.getAllToDoItemsCursor();
+	  startManagingCursor(toDoListCursor);
+	  
+	  // Update the array.
+	  updateArray();
+}
+
+private void updateArray() {
+	toDoListCursor.requery();
+	
+	todoItems.clear();
+	
+	if (toDoListCursor.moveToFirst())
+		do {
+			String task = toDoListCursor.getString(ToDoDBAdapter.TASK_COLUMN);
+			long created = toDoListCursor.getLong(ToDoDBAdapter.CREATION_DATE_COLUMN);
+			
+			ToDoItem newItem = new ToDoItem(task, new Date(created));
+			todoItems.add(0, newItem);
+		} while(toDoListCursor.moveToNext());
+	
+	aa.notifyDataSetChanged();
+}
+
+private void restoreUIState() {
+	 // Get the activity preferences object.
+	  SharedPreferences settings = getPreferences(Activity.MODE_PRIVATE);
+	  
+	  // Read the UI state values, specifying default values.
+	  String text = settings.getString(TEXT_ENTRY_KEY, "");
+	  Boolean adding = settings.getBoolean(ADDING_ITEM_KEY, false);
+	  
+	  // Restore the UI to the prvious state.
+	  if (adding) {
+		  addNewItem();
+		  myEditText.setText(text);
+	  }
+	
+  }
+  
+  @Override
+  public void onSaveInstanceState(Bundle savedInstanceState) {
+	  savedInstanceState.putInt(SELECTED_INDEX_KEY, myListView.getSelectedItemPosition());
+	  
+	  super.onSaveInstanceState(savedInstanceState);
+  }
+  
+  @Override
+  public void onRestoreInstanceState(Bundle savedInstanceState) {
+	  int pos = -1;
+	  
+	  if (savedInstanceState != null)
+		  if (savedInstanceState.containsKey(SELECTED_INDEX_KEY))
+			  pos = savedInstanceState.getInt(SELECTED_INDEX_KEY, -1);
+	  
+	  myListView.setSelection(pos);
+  }
+
+  @Override
+  protected void onPause() {
+	  super.onPause();
+	  
+	  // Get the activity preferences object.
+	  SharedPreferences uiState = getPreferences(0);
+	  // Get the preferences editor
+	  SharedPreferences.Editor editor = uiState.edit();
+	  
+	  // Add the UI state preference values.
+	  editor.putString(TEXT_ENTRY_KEY, myEditText.getText().toString());
+	  editor.putBoolean(ADDING_ITEM_KEY, addingNew);
+	  // Commit the preferences.
+	  editor.commit();
+  }
+  
+  @Override
+  public void onDestroy() {
+	  super.onDestroy();
+	  
+	  // Close the database
+	  toDoDBAdapter.close();
   }
   
   @Override
@@ -163,7 +266,8 @@ public class ToDoList extends Activity {
   }
 
   private void removeItem(int _index) {
-    todoItems.remove(_index);
-    aa.notifyDataSetChanged();  
+    // Items are added to the listview in reverse order, so invert the index.
+	toDoDBAdapter.removeTask(todoItems.size()-_index);
+	updateArray();
   }
 }

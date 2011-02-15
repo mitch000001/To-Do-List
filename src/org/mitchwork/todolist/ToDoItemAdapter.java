@@ -4,9 +4,6 @@ import java.text.SimpleDateFormat;
 import android.content.Context;
 import java.util.*;
 
-import org.mitchwork.todolist.R;
-
-
 import android.view.*;
 import android.widget.*;
 
