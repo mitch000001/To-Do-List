@@ -52,7 +52,6 @@ public class ToDoList extends Activity {
     todoItems = new ArrayList<ToDoItem>();
     int resID = R.layout.todolist_item;
     aa = new ToDoItemAdapter(this, resID, todoItems);
-    
     myListView.setAdapter(aa);
         
     myEditText.setOnKeyListener(new OnKeyListener() {
@@ -98,8 +97,8 @@ private void updateArray() {
 	
 	if (toDoListCursor.moveToFirst())
 		do {
-			String task = toDoListCursor.getString(ToDoDBAdapter.TASK_COLUMN);
-			long created = toDoListCursor.getLong(ToDoDBAdapter.CREATION_DATE_COLUMN);
+			String task = toDoListCursor.getString(toDoListCursor.getColumnIndex(ToDoDBAdapter.KEY_TASK));
+			long created = toDoListCursor.getLong(toDoListCursor.getColumnIndex(ToDoDBAdapter.KEY_CREATION_DATE));
 			
 			ToDoItem newItem = new ToDoItem(task, new Date(created));
 			todoItems.add(0, newItem);
@@ -110,7 +109,7 @@ private void updateArray() {
 
 private void restoreUIState() {
 	 // Get the activity preferences object.
-	  SharedPreferences settings = getPreferences(Activity.MODE_PRIVATE);
+	  SharedPreferences settings = getPreferences(0);
 	  
 	  // Read the UI state values, specifying default values.
 	  String text = settings.getString(TEXT_ENTRY_KEY, "");

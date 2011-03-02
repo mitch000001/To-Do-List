@@ -20,17 +20,14 @@ public class ToDoDBAdapter {
 	public static final String KEY_ID = "_id";
 	public static final String KEY_TASK = "task";
 	public static final String KEY_CREATION_DATE = "creation_date";
-	public static final int TASK_COLUMN = 0;
-	public static final int CREATION_DATE_COLUMN = 0;
 	
 	private SQLiteDatabase db;
 	private final Context context;
-	
-	private toDoDBHelper dbHelper;
+	private toDoDBOpenHelper dbHelper;
 	
 	public ToDoDBAdapter(Context _context) {
 		this.context = _context;
-		dbHelper = new toDoDBHelper(context, DATABASE_NAME, null, DATABASE_VERSION);
+		dbHelper = new toDoDBOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 	
 	public void close() {
@@ -44,7 +41,8 @@ public class ToDoDBAdapter {
 			db = dbHelper.getReadableDatabase();
 		}
 	}
-	
+
+    // Insert a new Task
 	public long insertTask(ToDoItem _task) {
 		// Create a new row of values to insert.
 		ContentValues newTaskValues = new ContentValues();
@@ -88,26 +86,26 @@ public class ToDoDBAdapter {
 								new String[] {KEY_ID, KEY_TASK},
 								KEY_ID + "=" + _rowIndex, null, null, null,
 								null, null);
-		if((cursor.getCount() == 0) || !cursor.moveToFirst()) {
+		if ((cursor.getCount() == 0) || !cursor.moveToFirst()) {
 			throw new SQLException("No to do item found for row: " + _rowIndex);
 		}
 		
-		String task = cursor.getString(TASK_COLUMN);
-		long created = cursor.getLong(CREATION_DATE_COLUMN);
+		String task = cursor.getString(cursor.getColumnIndex(KEY_TASK));
+		long created = cursor.getLong(cursor.getColumnIndex(KEY_CREATION_DATE));
 		
 		ToDoItem result = new ToDoItem(task, new Date(created));
 		return result;
 	}
 	
-	private static class toDoDBHelper extends SQLiteOpenHelper {
-		public toDoDBHelper(Context context, String name,
-							CursorFactory factory, int version) {
+	private static class toDoDBOpenHelper extends SQLiteOpenHelper {
+		public toDoDBOpenHelper(Context context, String name,
+                                CursorFactory factory, int version) {
 			super(context, name, factory, version);
 		}
 		
 		// SQL Statement to create a new database.
-		private static final String DATABASE_CREATE = "create table" +
-			DATABASE_TABLE + " (" + KEY_ID + "integer primary key autoincrement, " +
+		private static final String DATABASE_CREATE = "create table " +
+			DATABASE_TABLE + " (" + KEY_ID + " integer primary key autoincrement, " +
 			KEY_TASK + " text not null, " + KEY_CREATION_DATE + " long);";
 		
 		@Override
